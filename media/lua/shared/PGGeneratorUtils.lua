@@ -1,17 +1,19 @@
 local generatorUtils = {};
 
 local function log(...)
-    print('[Propane Generators (PGGeneratorInfoWindow.lua)]: ', ...)
+    print('[Propane Generators (PGGeneratorUtils.lua)]: ', ...)
 end
 
 local function getRandom(table)
-    -- With input n, generates a random int from 1 to n inclusive
-    return table[math.random(#table)]
+    -- ZombRand never returns the max number specified
+    return table[ZombRand(0, #table) + 1]
 end
 
 local function getWeightedRandom(probabilityTable)
-    -- [0, 1) generation range
-    local p = math.random()
+    -- ZombRand doesn't do what we want and math.random is unavailable
+    -- Simulate [0, 1) generation range
+    local p = ZombRand(0, 100)
+    p = p / 100
     local cumulativeProbability = 0
     for hitRegion, probability in pairs(probabilityTable) do
         cumulativeProbability = cumulativeProbability + probability
@@ -46,13 +48,17 @@ local function log(...)
     print('[Propane Generators (PGGeneratorUtils.lua)]: ', ...)
 end
 
+generatorUtils.getRandomCondition = function()
+    -- Generators have a chance to catch on fire at condition <= 20, so we give some buffer
+    return ZombRand(40, 100)
+end
+
 generatorUtils.getRandomDualFuelSetting = function()
     return getRandom(DUAL_FUEL_SETTINGS)
 end
 
-
-generatorUtils.getRandomDualFuelSetting = function()
-    return getRandom(DUAL_FUEL_SETTINGS)
+generatorUtils.getRandomFuelLevel = function()
+    return ZombRand(0, 100)
 end
 
 generatorUtils.getRandomGeneratorType = function()
@@ -68,11 +74,20 @@ generatorUtils.isDualFuelSetTo = function(generator, settingType)
 end
 
 generatorUtils.isGeneratorType = function(generator, targetType)
-    return targetType == generator:getModDate().generatorType
+    return targetType == generator:getModData().generatorType
 end
 
 generatorUtils.isModded = function(generator) 
     local modData = generator:getModData();
+
+    if #modData > 0 then
+        log('All pairs in generator modData:')
+        for k,v in pairs(modData) do
+            log('Key:', k, ', value:', v)
+        end
+    else
+        log('No modData set on generator')
+    end
 
     return modData.generatorType ~= nil;
 end

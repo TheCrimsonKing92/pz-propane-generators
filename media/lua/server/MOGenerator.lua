@@ -1,4 +1,5 @@
 local generatorUtil = require("PGGeneratorUtils")
+local DUAL_FUEL = generatorUtil.GENERATOR_TYPES.DualFuel
 local getRandomDualFuelSetting = generatorUtil.getRandomDualFuelSetting
 local getRandomGeneratorType = generatorUtil.getRandomGeneratorType
 
@@ -31,7 +32,7 @@ local function ReplaceExistingObject(object, generatorType, fuel, condition)
     local modData = item:getModData()
     modData.fuel = fuel
     modData.generatorType = generatorType
-    modData.dualFuelSetting = ('DualFuel' == generatorType and getRandomDualFuelSetting()) or nil
+    modData.dualFuelSetting = (DUAL_FUEL == generatorType and getRandomDualFuelSetting()) or nil
 
     log('Generated new Base.Generator item with modData: ', modData);
 
@@ -56,11 +57,4 @@ end
 local PRIORITY = 5
 
 log('Adding NewGenerator function to OnNewWithSprite for appliances_misc_01_0 (original gas generator, babyyyyy)')
-Events.OnObjectAdded.Add(function(isoObject)
-    log("Running OnObjectAdded")
-    if instanceof(isoObject, 'IsoGenerator') then
-        log('Got a generator, time to go to work')
-        NewGenerator(isoObject)
-    end
-end)
 MapObjects.OnNewWithSprite("appliances_misc_01_0", NewGenerator, PRIORITY)
