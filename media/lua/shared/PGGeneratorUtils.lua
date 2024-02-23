@@ -22,17 +22,11 @@ generatorUtils.GENERATOR_TYPES = {
 }
 
 local GENERATOR_TYPES = generatorUtils.GENERATOR_TYPES
---[[
+
 generatorUtils.GENERATOR_PROBABILITIES = {
     Gas = 5 / 10,
     Propane = 4 / 10,
     DualFuel = 1 / 10
-}
-]]--
-generatorUtils.GENERATOR_PROBABILITIES = {
-    DualFuel = 95 / 100,
-    Gas = 2 / 100,
-    Propane = 3 / 100
 }
 
 local GENERATOR_PROBABILITIES = generatorUtils.GENERATOR_PROBABILITIES
