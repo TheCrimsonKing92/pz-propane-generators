@@ -30,12 +30,10 @@ function ISWorldObjectContextMenu.findAvailableGeneratorFuel(playerInventory, ge
     local generatorType = modData.generatorType
 
     if usesGas(generator) then
-        log('Find fuel for gas generator')
         return playerInventory:getAllEvalRecurse(isValidPetrol)
     end
 
     if usesPropane(generator) then
-        log('Find fuel for propane generator')
         return playerInventory:getAllEvalRecurse(isValidPropane)
     end
 
@@ -46,14 +44,9 @@ end
 local originalOnAddFuelGenerator = ISWorldObjectContextMenu.onAddFuelGenerator
 
 ISWorldObjectContextMenu.onAddFuelGenerator = function(worldObjects, fuelContainer, generator, player, context)
-    log('onAddFuelGenerator called')
-    local modData = generator:getModData()
-
-    if modData.generatorType == nil or modData.generatorType == 'Gas' then
+    if usesGas(generator) then
         originalOnAddFuelGenerator(worldObjects, fuelContainer, generator, player, context)
         return
-    else
-        log('onAddFuelGenerator for type: ' .. modData.generatorType)
     end
 
     local playerObj = getSpecificPlayer(player)
@@ -132,7 +125,6 @@ end
 ISWorldObjectContextMenu.catchUnmoddedGenerators = function(player, context, worldObjects)
     for _, object in ipairs(worldObjects) do
         if instanceof(object, "IsoGenerator") and not isModded(object) and not PGHackedGenerators[object] then
-            log('Hacking mod functionality onto generator at the last second')
             modNewGenerator(generator)
             PGHackedGenerators[generator] = true
         end
@@ -172,7 +164,6 @@ ISWorldObjectContextMenu.substituteContextEntries = function(player, context, wo
     end
 
     if not hasAddFuel and generator then
-        log('No add fuel context menu and we *do* have a generator')
         -- Default gas would already have been taken care of
         if usesPropane(generator) then
             local playerInv = playerObj:getInventory()
@@ -183,6 +174,4 @@ ISWorldObjectContextMenu.substituteContextEntries = function(player, context, wo
 end
 
 Events.OnPreFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.catchUnmoddedGenerators)
-
 Events.OnFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.substituteContextEntries)
-log('Modified ISWorldObjectContextMenu')

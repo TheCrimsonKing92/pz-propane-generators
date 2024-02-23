@@ -105,7 +105,6 @@ function PGCheckForGenerators:extractSearchSquares(square)
     return squares
 end
 
-log('Adding PGCheckForGenerators:checkForGeneratorOnMove to OnPlayerMove')
 Events.OnPlayerMove.Add(function(isoPlayer)
     PGCheckForGenerators:checkForGeneratorOnMove(isoPlayer)
 end)

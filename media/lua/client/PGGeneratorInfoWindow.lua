@@ -59,5 +59,3 @@ function ISGeneratorInfoWindow:update()
     self.panel.description = ISGeneratorInfoWindow.getRichText(self.object, true)
     self:setWidth(self.panel:getWidth())
 end
-
-log('Modified ISGeneratorInfoWindow')
