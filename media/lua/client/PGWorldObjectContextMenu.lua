@@ -1,18 +1,28 @@
 local generatorUtil = require("PGGeneratorUtils");
-local isDualFuel = generatorUtil.isDualFuel;
-local usesGas = generatorUtil.usesGas;
-local usesPropane = generatorUtil.usesPropane;
+local getName = generatorUtil.getName
+local isDualFuel = generatorUtil.isDualFuel
+local isModded = generatorUtil.isModded
+local modNewGenerator = generatorUtil.modNewGenerator
+local usesGas = generatorUtil.usesGas
+local usesPropane = generatorUtil.usesPropane
+
+-- This sucks, but it provides a better user experience
+-- If we encounter a generator that's not been modded by the OnPlayerMove event, we try to mod it on the spot
+-- but we register it here so as not to keep running this backup
+PGHackedGenerators = {}
 
 local function log(...)
     print('[Propane Generators (PGWorldObjectContextMenu.lua)]: ', ...)
 end
 
 local function isValidPropane(item)
-    return item:getFullType() == 'Base.PropaneTank' and (not item:isBroken()) and instanceof(item, "DrainableComboItem") and item:getUsedDelta() > 0
+    return "Base.PropaneTank" == item:getFullType() and not item:isBroken() and
+            instanceof(item, "DrainableComboItem") and item:getUsedDelta() > 0
 end
 
 local function isValidPetrol(item)
-    return item:hasTag("Petrol") and not item:isBroken() and instanceof(item, "DrainableComboItem") and item:getUsedDelta() > 0
+    return item:hasTag("Petrol") and not item:isBroken() and
+           instanceof(item, "DrainableComboItem") and item:getUsedDelta() > 0
 end
 
 function ISWorldObjectContextMenu.findAvailableGeneratorFuel(playerInventory, generator)
@@ -20,10 +30,12 @@ function ISWorldObjectContextMenu.findAvailableGeneratorFuel(playerInventory, ge
     local generatorType = modData.generatorType
 
     if usesGas(generator) then
+        log('Find fuel for gas generator')
         return playerInventory:getAllEvalRecurse(isValidPetrol)
     end
 
     if usesPropane(generator) then
+        log('Find fuel for propane generator')
         return playerInventory:getAllEvalRecurse(isValidPropane)
     end
 
@@ -34,11 +46,14 @@ end
 local originalOnAddFuelGenerator = ISWorldObjectContextMenu.onAddFuelGenerator
 
 ISWorldObjectContextMenu.onAddFuelGenerator = function(worldObjects, fuelContainer, generator, player, context)
+    log('onAddFuelGenerator called')
     local modData = generator:getModData()
 
     if modData.generatorType == nil or modData.generatorType == 'Gas' then
         originalOnAddFuelGenerator(worldObjects, fuelContainer, generator, player, context)
         return
+    else
+        log('onAddFuelGenerator for type: ' .. modData.generatorType)
     end
 
     local playerObj = getSpecificPlayer(player)
@@ -53,7 +68,7 @@ ISWorldObjectContextMenu.onAddFuelGenerator = function(worldObjects, fuelContain
         return
     end
 
-    local fillOption = context:addOption(getText("ContextMenu_GeneratorAddFuel"), worldObjects, nil)
+    local fillOption = context:insertOptionAfter(getText("ContextMenu_GeneratorInfo"), getText("ContextMenu_GeneratorAddFuel"), worldObjects, nil)
 
     if not generator:getSquare() or not AdjacentFreeTileFinder.Find(generator:getSquare(), playerObj) then
         fillOption.notAvailable = true
@@ -114,26 +129,60 @@ ISWorldObjectContextMenu.onAddFuelGenerator = function(worldObjects, fuelContain
     end
 end
 
---[[
-    I think this is actually unnecessary. Since we've modified onAddFuelGenerator, the correct context options should be generated when called by the vanilla code
----@param context ISContextMenu
-PGWorldObjectContextMenu.substituteContextEntries = function(player, context)
-    for i = 1, #context.options do
-        local opt = context.options[i]
-        local eligibleForChange = function(generator)
-            return isDualFuel(generator) or usesPropane(generator)
-        end
-
-        -- Context options are bound in this form:
-        -- function ISContextMenu:addOption(name, target, onSelect, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10)
-        -- We have no need to replace onActivateGenerator, onInfoGenerator, or onPlugGenerator, they simply queue timed actions or defer to modified code like the generator info window
-        if opt.onSelect == ISWorldObjectContextMenu.doAddFuelGenerator then
-            context:removeOptionByName(opt.name)
-            -- Do add fuel binding replacement
+ISWorldObjectContextMenu.catchUnmoddedGenerators = function(player, context, worldObjects)
+    for _, object in ipairs(worldObjects) do
+        if instanceof(object, "IsoGenerator") and not isModded(object) and not PGHackedGenerators[object] then
+            log('Hacking mod functionality onto generator at the last second')
+            modNewGenerator(generator)
+            PGHackedGenerators[generator] = true
         end
     end
 end
 
-Events.OnFillWorldObjectContextMenu.Add(substituteContextEntries)
---]]
+---@param player int
+---@param context ISContextMenu
+ISWorldObjectContextMenu.substituteContextEntries = function(player, context, worldObjects)
+    local playerObj = getSpecificPlayer(player)
+    local generator = nil
+    local hasAddFuel = false
+    for i = 1, #context.options do
+        local opt = context.options[i]
+
+        if opt.onSelect == ISWorldObjectContextMenu.onInfoGenerator then
+            generator = opt.param1
+    
+            local eligibleForChange = function(generator)
+                return isDualFuel(generator) or usesPropane(generator)
+            end
+
+            if not eligibleForChange(generator) then
+                return
+            end
+            
+            -- I made it work this way, but maybe we could just check if opt.toolTip ~= nil and assume this is true
+            if playerObj:DistToSquared(generator:getX() + 0.5, generator:getY() + 0.5) < 2 * 2 then
+                local tooltip = ISWorldObjectContextMenu.addToolTip()
+                tooltip:setName(getName(generator))
+                tooltip.description = ISGeneratorInfoWindow.getRichText(generator, true)
+                opt.toolTip = tooltip
+            end
+        elseif opt.name == getText("ContextMenu_GeneratorAddFuel") then
+            hasAddFuel = true
+        end
+    end
+
+    if not hasAddFuel and generator then
+        log('No add fuel context menu and we *do* have a generator')
+        -- Default gas would already have been taken care of
+        if usesPropane(generator) then
+            local playerInv = playerObj:getInventory()
+            local fuelContainer = playerInv:containsEvalRecurse(isValidPropane)
+            ISWorldObjectContextMenu.onAddFuelGenerator(worldObjects, fuelContainer, generator, player, context)
+        end
+    end
+end
+
+Events.OnPreFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.catchUnmoddedGenerators)
+
+Events.OnFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.substituteContextEntries)
 log('Modified ISWorldObjectContextMenu')

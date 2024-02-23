@@ -1,24 +1,11 @@
 local generatorUtil = require("PGGeneratorUtils");
-local isDualFuel = generatorUtil.isDualFuel;
-local usesGas = generatorUtil.usesGas;
+local getName = generatorUtil.getName
+local isDualFuel = generatorUtil.isDualFuel
+local usesGas = generatorUtil.usesGas
+local usesPropane = generatorUtil.usesPropane
 
 local function log(...)
     print('[Propane Generators (PGGeneratorInfoWindow.lua)]: ', ...)
-end
-
-local function getName(generator)
-    if usesGas(generator) then
-        return getText("IGUI_Generator_TypeGas")
-    end
-
-    -- TODO Replace with getText calls to set up for translation
-    if not isDualFuel(generator) then
-        return generator:getModData().generatorType .. ' Generator'
-    else
-        local friendlyName = 'Dual-Fuel Generator'
-        local setting = '(' .. generator:getModData().dualFuelSetting .. ' Selected)'
-        return friendlyName .. setting
-    end
 end
 
 local originalGetRichText = ISGeneratorInfoWindow.getRichText
@@ -27,7 +14,12 @@ function ISGeneratorInfoWindow.getRichText(object, displayStats)
     local originalText = originalGetRichText(object, displayStats)
 
     -- Fairly uninvasive for these cases, but...
-    if usesGas(object) and not isDualFuel(object) then
+    if not isDualFuel(object) or usesGas(object) then
+        return originalText
+    end
+
+    -- TODO Reevaluate for propane use case
+    if usesPropane(object) and not isDualFuel(object) then
         return originalText
     end
 
@@ -37,15 +29,13 @@ function ISGeneratorInfoWindow.getRichText(object, displayStats)
     local generatorType = modData.generatorType
     local fuelType = string.lower(modData.dualFuelSetting)
     -- TODO Replace with getText calls
-    return text .. " <LINE>Currently set to use " .. fuelType .. " fuel."
+    return "<LINE>Currently set to use " .. fuelType .. " fuel.<LINE>" .. originalText
 end
 
 local originalSetObject = ISGeneratorInfoWindow.setObject
 
 function ISGeneratorInfoWindow:setObject(object)
-    log('Setting generator object for info window')
     originalSetObject(self, object)
-
     if usesGas(object) then
         return
     end
@@ -55,6 +45,19 @@ function ISGeneratorInfoWindow:setObject(object)
     self.panel:setTexture(object:getTextureName())
     self.fuel = object:getFuel()
     self.condition = object:getCondition()
+end
+
+local originalUpdate = ISGeneratorInfoWindow.update
+
+function ISGeneratorInfoWindow:update()
+    originalUpdate(self)
+
+    if usesGas(self.object) then
+        return
+    end
+
+    self.panel.description = ISGeneratorInfoWindow.getRichText(self.object, true)
+    self:setWidth(self.panel:getWidth())
 end
 
 log('Modified ISGeneratorInfoWindow')

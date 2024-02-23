@@ -4,16 +4,8 @@ local function log(...)
     print('[Propane Generators (PGGeneratorUtils.lua)]: ', ...)
 end
 
-local function getRandom(table)
-    -- ZombRand never returns the max number specified
-    return table[ZombRand(0, #table) + 1]
-end
-
 local function getWeightedRandom(probabilityTable)
-    -- ZombRand doesn't do what we want and math.random is unavailable
-    -- Simulate [0, 1) generation range
-    local p = ZombRand(0, 100)
-    p = p / 100
+    local p = ZombRandFloat(0, 1)
     local cumulativeProbability = 0
     for hitRegion, probability in pairs(probabilityTable) do
         cumulativeProbability = cumulativeProbability + probability
@@ -30,11 +22,17 @@ generatorUtils.GENERATOR_TYPES = {
 }
 
 local GENERATOR_TYPES = generatorUtils.GENERATOR_TYPES
-
+--[[
 generatorUtils.GENERATOR_PROBABILITIES = {
     Gas = 5 / 10,
     Propane = 4 / 10,
     DualFuel = 1 / 10
+}
+]]--
+generatorUtils.GENERATOR_PROBABILITIES = {
+    DualFuel = 95 / 100,
+    Gas = 2 / 100,
+    Propane = 3 / 100
 }
 
 local GENERATOR_PROBABILITIES = generatorUtils.GENERATOR_PROBABILITIES
@@ -44,8 +42,38 @@ generatorUtils.DUAL_FUEL_SETTINGS = {
     Propane = GENERATOR_TYPES.Propane
 }
 
+generatorUtils.DUAL_FUEL_PROBABILITIES = {
+    Gas = 3 / 10,
+    Propane = 7 / 10
+}
+
+local DUAL_FUEL_PROBABILITIES = generatorUtils.DUAL_FUEL_PROBABILITIES
+
 local function log(...)
     print('[Propane Generators (PGGeneratorUtils.lua)]: ', ...)
+end
+
+generatorUtils.getName = function(generator)
+    if generatorUtils.usesGas(generator) then
+        return getText("IGUI_Generator_TypeGas")
+    end
+
+    -- TODO Replace with getText calls to set up for translation
+    if not generatorUtils.isDualFuel(generator) then
+        return generator:getModData().generatorType .. '-Powered Generator'
+    else
+        local friendlyName = 'Dual-Fuel Generator'
+        local setting = ' (' .. generator:getModData().dualFuelSetting .. ' Selected)'
+        return friendlyName .. setting
+    end
+end
+
+generatorUtils.getNewGeneratorSettings = function()
+    local fuel = generatorUtils.getRandomFuelLevel()
+    local condition = generatorUtils.getRandomCondition()
+    local generatorType = generatorUtils.getRandomGeneratorType()
+    local dualFuelSetting = ('DualFuel' == generatorType and generatorUtils.getRandomDualFuelSetting()) or nil
+    return fuel, condition, generatorType, dualFuelSetting
 end
 
 generatorUtils.getRandomCondition = function()
@@ -54,7 +82,7 @@ generatorUtils.getRandomCondition = function()
 end
 
 generatorUtils.getRandomDualFuelSetting = function()
-    return getRandom(DUAL_FUEL_SETTINGS)
+    return getWeightedRandom(DUAL_FUEL_PROBABILITIES)
 end
 
 generatorUtils.getRandomFuelLevel = function()
@@ -66,34 +94,39 @@ generatorUtils.getRandomGeneratorType = function()
 end
 
 generatorUtils.isDualFuel = function(generator) 
-    return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, GENERATOR_TYPES.DualFuel)
+    return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, 'DualFuel')
 end
 
 generatorUtils.isDualFuelSetTo = function(generator, settingType) 
-    return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, GENERATOR_TYPES.DualFuel) and settingType == generator:getModData().dualFuelSetting
+    return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, 'DualFuel') and settingType == generator:getModData().dualFuelSetting
 end
 
 generatorUtils.isGeneratorType = function(generator, targetType)
     return targetType == generator:getModData().generatorType
 end
 
-generatorUtils.isModded = function(generator) 
-    local modData = generator:getModData();
+generatorUtils.isModded = function(generator)
+    return generator:getModData().generatorType ~= nil
+end
 
-    if #modData > 0 then
-        log('All pairs in generator modData:')
-        for k,v in pairs(modData) do
-            log('Key:', k, ', value:', v)
-        end
-    else
-        log('No modData set on generator')
-    end
-
-    return modData.generatorType ~= nil;
+generatorUtils.modNewGenerator = function(generator)
+    log('Generating new generator settings...')
+    local fuel, condition, generatorType, dualFuelSetting = generatorUtils.getNewGeneratorSettings()
+    log('Fuel: ' .. tostring(fuel))
+    log('Condition: ' .. tostring(condition))
+    log('Generator Type: ' .. generatorType)
+    log('Dual-Fuel Setting: ' .. (dualFuelSetting or 'N/A'))
+    generator:setCondition(condition)
+    generator:setFuel(fuel)
+    generator:update()
+    generator:getModData().dualFuelSetting = dualFuelSetting
+    generator:getModData().fuel = fuel
+    generator:getModData().generatorType = generatorType
+    generator:transmitCompleteItemToServer()
+    generator:transmitModData()
 end
 
 generatorUtils.usesGas = function(generator)
-    log('Checking if generator uses gas...')
     if not generatorUtils.isModded(generator) then
         log('Generator is not modded, uses gas by default')
         return true

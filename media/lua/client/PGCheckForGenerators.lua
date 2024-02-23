@@ -1,11 +1,9 @@
 local generatorUtil = require("PGGeneratorUtils")
 local DUAL_FUEL = generatorUtil.GENERATOR_TYPES.DualFuel
 local GENERATOR_TYPES = generatorUtil.GENERATOR_TYPES
-local getRandomCondition = generatorUtil.getRandomCondition
-local getRandomDualFuelSetting = generatorUtil.getRandomDualFuelSetting
-local getRandomFuelLevel = generatorUtil.getRandomFuelLevel
-local getRandomGeneratorType = generatorUtil.getRandomGeneratorType
+local getNewGeneratorSettings = generatorUtil.getNewGeneratorSettings
 local isModded = generatorUtil.isModded
+local modNewGenerator = generatorUtil.modNewGenerator
 
 local function log(...)
     print('[Propane Generators (PGCheckForGenerators.lua)]: ', ...)
@@ -32,34 +30,14 @@ end
 function PGCheckForGenerators:checkSquareForGenerator(square)
     if not square then
         return
+    elseif square:getModData().checkedForGenerator then
+        return
     end
 
-    local modData = square:getModData()
     local generator = square:getGenerator()
 
     if generator and not isModded(generator) then
-        log('We have an unmodded generator!')
-        local fuel = getRandomFuelLevel()
-        local condition = getRandomCondition()
-        local generatorType = getRandomGeneratorType()
-        local dualFuelSetting = (DUAL_FUEL == generatorType and getRandomDualFuelSetting()) or nil
-        log('Settings-- fuel:', fuel, ', condition:', condition, ', generatorType:', generatorType, ', dualFuelSetting: ', dualFuelSetting)
-
-        generator:setCondition(condition)
-        generator:setFuel(fuel)
-        generator:update()
-        log('Grabbing modData freshly off of generator to set further data points')
-        modData = generator:getModData()
-        modData.dualFuelSetting = dualFuelSetting
-        modData.fuel = fuel
-        modData.generatorType = generatorType
-        generator:transmitModData()
-        generator:transmitCompleteItemToServer()
-        log('Grabbing modData freshly off of generator after transmit to query data points')
-        modData = generator:getModData()
-        for k,v in pairs(modData) do
-            log('Key:', k, ', value:', v)
-        end
+        modNewGenerator(generator)
     end
 
     square:getModData().checkedForGenerator = true
@@ -80,15 +58,51 @@ function PGCheckForGenerators:checkForGeneratorOnMove(player)
         return
     end
 
-    local squares = {}
-    table.insert(squares, square:getN())
-    table.insert(squares, square:getS())
-    table.insert(squares, square:getW())
-    table.insert(squares, square:getE())
+    local squares = self:extractSearchSquares(square)
 
     self:checkRoomForGenerator(square)
     self:checkSquareForGenerator(square)
     self:checkSquaresForGenerator(squares)
+end
+
+function PGCheckForGenerators:extractSearchSquares(square)
+    local squares = {}
+    local n = square:getN()
+    local s = square:getS()
+    local w = square:getW()
+    local e = square:getE()
+    table.insert(squares, n)
+    table.insert(squares, s)
+    table.insert(squares, w)
+    table.insert(squares, e)
+
+    if n then
+        table.insert(squares, n:getW())
+        table.insert(squares, n:getE())
+    else
+        if e then
+            table.insert(squares, e:getN())
+        end
+
+        if w then
+            table.insert(squares, w:getN())
+        end
+    end
+
+    if s then
+        table.insert(squares, s:getW())
+        table.insert(squares, s:getE())
+    else
+        if e then
+            table.insert(squares, e:getS())
+        end
+
+        if w then
+            table.insert(squares, w:getS())
+        end
+    end
+
+    return squares
 end
 
 log('Adding PGCheckForGenerators:checkForGeneratorOnMove to OnPlayerMove')
