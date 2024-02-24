@@ -1,0 +1,5 @@
+IGUI_EN = {
+    IGUI_DualFuel_CurrentSetting = "Currently set to use %1 fuel.",
+    IGUI_Generator_TypeDualFuel = "Dual-Fuel Generator (%1 Selected)",
+    IGUI_Generator_TypePropane = "Propane-powered Generator"
+}

@@ -1,6 +1,8 @@
 local generatorUtil = require("PGGeneratorUtils");
 local getName = generatorUtil.getName
 local isDualFuel = generatorUtil.isDualFuel
+local isGeneratorType = generatorUtil.isGeneratorType
+local isModded = generatorUtil.isModded
 local usesGas = generatorUtil.usesGas
 local usesPropane = generatorUtil.usesPropane
 
@@ -13,23 +15,12 @@ local originalGetRichText = ISGeneratorInfoWindow.getRichText
 function ISGeneratorInfoWindow.getRichText(object, displayStats)
     local originalText = originalGetRichText(object, displayStats)
 
-    -- Fairly uninvasive for these cases, but...
-    if not isDualFuel(object) or usesGas(object) then
+    if not isModded(object) or not isDualFuel(generator) or not displayStats then
         return originalText
     end
 
-    -- TODO Reevaluate for propane use case
-    if usesPropane(object) and not isDualFuel(object) then
-        return originalText
-    end
-
-    -- We are forced to prepend or append the Dual-Fuel setting
-    -- (and it might look better interspersed, perhaps before the fuel amount)
-    local modData = object:getModData()
-    local generatorType = modData.generatorType
-    local fuelType = string.lower(modData.dualFuelSetting)
-    -- TODO Replace with getText calls
-    return "<LINE>Currently set to use " .. fuelType .. " fuel.<LINE>" .. originalText
+    local fuelType = string.lower(object:getModData().dualFuelSetting)
+    return "<LINE>" .. getText("IGUI_DualFuel_CurrentSetting", fuelType) .. "<LINE>" .. originalText
 end
 
 local originalSetObject = ISGeneratorInfoWindow.setObject

@@ -48,18 +48,18 @@ local function log(...)
 end
 
 generatorUtils.getName = function(generator)
-    if generatorUtils.usesGas(generator) then
+    if not generatorUtils.isModded(generator) or
+       generatorUtils.isGeneratorType(generator, GENERATOR_TYPES.Gas) then
         return getText("IGUI_Generator_TypeGas")
     end
 
-    -- TODO Replace with getText calls to set up for translation
-    if not generatorUtils.isDualFuel(generator) then
-        return generator:getModData().generatorType .. '-Powered Generator'
-    else
-        local friendlyName = 'Dual-Fuel Generator'
-        local setting = ' (' .. generator:getModData().dualFuelSetting .. ' Selected)'
-        return friendlyName .. setting
+    if generatorUtils.isGeneratorType(generator, GENERATOR_TYPES.Propane) then
+        return getText("IGUI_Generator_TypePropane")
     end
+
+    -- TODO Replace with getText calls to set up for translation
+    local setting = generator:getModData().dualFuelSetting
+    return getText("IGUI_Generator_TypeDualFuel", setting)
 end
 
 generatorUtils.getNewGeneratorSettings = function()
@@ -122,7 +122,6 @@ end
 
 generatorUtils.usesGas = function(generator)
     if not generatorUtils.isModded(generator) then
-        log('Generator is not modded, uses gas by default')
         return true
     end
 
