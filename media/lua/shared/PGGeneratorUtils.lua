@@ -36,6 +36,8 @@ generatorUtils.DUAL_FUEL_SETTINGS = {
     Propane = GENERATOR_TYPES.Propane
 }
 
+local DUAL_FUEL_SETTINGS = generatorUtils.DUAL_FUEL_SETTINGS
+
 generatorUtils.DUAL_FUEL_PROBABILITIES = {
     Gas = 3 / 10,
     Propane = 7 / 10
@@ -45,6 +47,26 @@ local DUAL_FUEL_PROBABILITIES = generatorUtils.DUAL_FUEL_PROBABILITIES
 
 local function log(...)
     print('[Propane Generators (PGGeneratorUtils.lua)]: ', ...)
+end
+
+generatorUtils.changeFuelSetting = function(generator, fuelType)
+    local currentType = generator:getModData().dualFuelSetting
+    local currentFuel = generator:getFuel()
+    local nextFuel = nil
+
+    if DUAL_FUEL_SETTINGS.Gas == currentType then
+        generator:getModData().gasFuel = currentFuel
+        nextFuel = generator:getModData().propaneFuel or 0
+    else
+        generator:getModData().propaneFuel = currentFuel
+        nextFuel = generator:getModData().gasFuel or 0
+    end
+
+    generator:setFuel(nextFuel)
+    generator:getModData().fuel = nextFuel
+    generator:getModData().dualFuelSetting = fuelType
+    generator:update()
+    generator:transmitModData()
 end
 
 generatorUtils.getName = function(generator)
@@ -110,6 +132,18 @@ generatorUtils.modNewGenerator = function(generator)
     log('Condition: ' .. tostring(condition))
     log('Generator Type: ' .. generatorType)
     log('Dual-Fuel Setting: ' .. (dualFuelSetting or 'N/A'))
+    local gasFuel = 0
+    local propaneFuel = 0
+    if 'DualFuel' == generatorType then
+        if DUAL_FUEL_SETTINGS.Gas == dualFuelSetting then
+            gasFuel = fuel
+        else
+            propaneFuel = fuel
+        end
+
+        generator:getModData().gasFuel = gasFuel
+        generator:getModData().propaneFuel = propaneFuel
+    end
     generator:setCondition(condition)
     generator:setFuel(fuel)
     generator:update()

@@ -1,4 +1,5 @@
 local generatorUtil = require("PGGeneratorUtils");
+local DUAL_FUEL_SETTINGS = generatorUtil.DUAL_FUEL_SETTINGS
 local getName = generatorUtil.getName
 local isDualFuel = generatorUtil.isDualFuel
 local isModded = generatorUtil.isModded
@@ -25,7 +26,16 @@ local function isValidPetrol(item)
            instanceof(item, "DrainableComboItem") and item:getUsedDelta() > 0
 end
 
-function ISWorldObjectContextMenu.findAvailableGeneratorFuel(playerInventory, generator)
+ISWorldObjectContextMenu.catchUnmoddedGenerators = function(player, context, worldObjects)
+    for _, object in ipairs(worldObjects) do
+        if instanceof(object, "IsoGenerator") and not isModded(object) and not PGHackedGenerators[object] then
+            modNewGenerator(generator)
+            PGHackedGenerators[generator] = true
+        end
+    end
+end
+
+ISWorldObjectContextMenu.findAvailableGeneratorFuel = function(playerInventory, generator)
     local modData = generator:getModData()
     local generatorType = modData.generatorType
 
@@ -122,12 +132,12 @@ ISWorldObjectContextMenu.onAddFuelGenerator = function(worldObjects, fuelContain
     end
 end
 
-ISWorldObjectContextMenu.catchUnmoddedGenerators = function(player, context, worldObjects)
-    for _, object in ipairs(worldObjects) do
-        if instanceof(object, "IsoGenerator") and not isModded(object) and not PGHackedGenerators[object] then
-            modNewGenerator(generator)
-            PGHackedGenerators[generator] = true
-        end
+ISWorldObjectContextMenu.doChangeGeneratorFuel = function(worldObjects, generator, otherFuel, player)
+    local playerObj = getSpecificPlayer(player)
+    if luautils.walkAdj(playerObj, generator:getSquare()) then
+        -- function PGChangeGeneratorFuel:new(player, generator, otherFuel)
+        local action = PGChangeGeneratorFuel:new(player, generator, otherFuel)
+        ISTimedActionQueue.add(action)
     end
 end
 
@@ -170,6 +180,11 @@ ISWorldObjectContextMenu.substituteContextEntries = function(player, context, wo
             local fuelContainer = playerInv:containsEvalRecurse(isValidPropane)
             ISWorldObjectContextMenu.onAddFuelGenerator(worldObjects, fuelContainer, generator, player, context)
         end
+    end
+
+    if generator and isDualFuel(generator) then
+        local otherType = (usesGas(generator) and DUAL_FUEL_SETTINGS.Propane) or DUAL_FUEL_SETTINGS.Gas
+        context:insertOptionAfter(getText("ContextMenu_GeneratorInfo"), getText("ContextMenu_ChangeFuelSetting", otherType), worldObjects, ISWorldObjectContextMenu.doChangeGeneratorFuel, generator, otherType, player)
     end
 end
 
