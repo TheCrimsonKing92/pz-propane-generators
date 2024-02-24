@@ -1,9 +1,9 @@
 local generatorUtil = require("PGGeneratorUtils");
+local GENERATOR_TYPES = generatorUtil.GENERATOR_TYPES
 local getName = generatorUtil.getName
 local isDualFuel = generatorUtil.isDualFuel
 local isGeneratorType = generatorUtil.isGeneratorType
 local isModded = generatorUtil.isModded
-local usesGas = generatorUtil.usesGas
 local usesPropane = generatorUtil.usesPropane
 
 local function log(...)
@@ -27,7 +27,8 @@ local originalSetObject = ISGeneratorInfoWindow.setObject
 
 function ISGeneratorInfoWindow:setObject(object)
     originalSetObject(self, object)
-    if usesGas(object) then
+    
+    if not isModded(object) or isGeneratorType(object, GENERATOR_TYPES.Gas) then
         return
     end
 
@@ -43,7 +44,7 @@ local originalUpdate = ISGeneratorInfoWindow.update
 function ISGeneratorInfoWindow:update()
     originalUpdate(self)
 
-    if usesGas(self.object) then
+    if not isModded(self.object) or not isDualFuel(self.object) then
         return
     end
 

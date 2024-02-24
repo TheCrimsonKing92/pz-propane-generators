@@ -9,10 +9,7 @@ local function log(...)
 end
 
 if isClient() then
-    log('Not running this code on the client, returning')
     return
-else
-    log("Running the code, as we are on the server")
 end
 
 local function ReplaceExistingObject(object)
