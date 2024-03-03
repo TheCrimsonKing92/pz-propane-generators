@@ -31,6 +31,13 @@ generatorUtils.GENERATOR_PROBABILITIES = {
 
 local GENERATOR_PROBABILITIES = generatorUtils.GENERATOR_PROBABILITIES
 
+generatorUtils.GENERATOR_SPRITES = {
+    Propane = "generator_propane_0",
+    DualFuel = "generator_dual-fuel_0"
+}
+
+local GENERATOR_SPRITES = generatorUtils.GENERATOR_SPRITES
+
 generatorUtils.DUAL_FUEL_SETTINGS = {
     Gas = GENERATOR_TYPES.Gas,
     Propane = GENERATOR_TYPES.Propane
@@ -126,7 +133,7 @@ generatorUtils.isModded = function(generator)
 end
 
 generatorUtils.modNewGenerator = function(generator)
-    log('Generating new generator settings...')
+    log('New generator settings --')
     local fuel, condition, generatorType, dualFuelSetting = generatorUtils.getNewGeneratorSettings()
     log('Fuel: ' .. tostring(fuel))
     log('Condition: ' .. tostring(condition))
@@ -134,6 +141,7 @@ generatorUtils.modNewGenerator = function(generator)
     log('Dual-Fuel Setting: ' .. (dualFuelSetting or 'N/A'))
     local gasFuel = 0
     local propaneFuel = 0
+
     if 'DualFuel' == generatorType then
         if DUAL_FUEL_SETTINGS.Gas == dualFuelSetting then
             gasFuel = fuel
@@ -141,9 +149,13 @@ generatorUtils.modNewGenerator = function(generator)
             propaneFuel = fuel
         end
 
+        generator:setSprite(GENERATOR_SPRITES.DualFuel)
         generator:getModData().gasFuel = gasFuel
         generator:getModData().propaneFuel = propaneFuel
+    elseif 'Propane' == generatorType then
+        generator:setSprite(GENERATOR_SPRITES.Propane)
     end
+
     generator:setCondition(condition)
     generator:setFuel(fuel)
     generator:update()
