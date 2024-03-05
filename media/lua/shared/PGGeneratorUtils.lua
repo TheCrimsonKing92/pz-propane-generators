@@ -86,7 +86,6 @@ generatorUtils.getName = function(generator)
         return getText("IGUI_Generator_TypePropane")
     end
 
-    -- TODO Replace with getText calls to set up for translation
     local setting = generator:getModData().dualFuelSetting
     return getText("IGUI_Generator_TypeDualFuel", setting)
 end
@@ -122,6 +121,25 @@ end
 
 generatorUtils.isDualFuelSetTo = function(generator, settingType) 
     return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, 'DualFuel') and settingType == generator:getModData().dualFuelSetting
+end
+
+generatorUtils.isGenerator = function(item)
+    if item == nil then
+        return false
+    end
+
+    local fullType = item:getFullType()
+
+    if "Base.Generator" == fullType then
+        return true
+    elseif "PropaneGenerators.PropaneGenerator" == fullType then
+        return true
+    elseif "PropaneGenerators.DualFuelGenerator" == fullType then
+        return true
+    else
+        log("Couldn't identify item with type " .. fullType .. " as a generator")
+        return false
+    end
 end
 
 generatorUtils.isGeneratorType = function(generator, targetType)
@@ -163,6 +181,11 @@ generatorUtils.modNewGenerator = function(generator)
     generator:getModData().fuel = fuel
     generator:getModData().generatorType = generatorType
     generator:transmitCompleteItemToServer()
+    generator:transmitModData()
+end
+
+generatorUtils.modVanillaGenerator = function(generator)
+    generator:getModData().generatorType = GENERATOR_TYPES.Gas
     generator:transmitModData()
 end
 
