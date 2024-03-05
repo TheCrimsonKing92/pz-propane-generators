@@ -1,0 +1,33 @@
+module PropaneGenerators {
+    imports {
+        Base
+    }
+
+    item PropaneGenerator
+    {
+        DisplayCategory = Electronics,
+        Weight = 36,
+        Type = Normal,
+        DisplayName	= Propane Generator,
+        Icon = GeneratorPropane,
+        Tooltip = Tooltip_GeneratorPropane,
+		RequiresEquippedBothHands = true,
+		MetalValue = 450,
+        ConditionMax = 100,
+        Tags = HeavyItem,
+    }
+
+    item DualFuelGenerator
+    {
+        DisplayCategory = Electronics,
+        Weight = 44,
+        Type = Normal,
+        DisplayName	= Dual-Fuel Generator,
+        Icon = GeneratorDualFuel,
+        Tooltip = Tooltip_GeneratorDualFuel,
+		RequiresEquippedBothHands = true,
+		MetalValue = 550,
+        ConditionMax = 100,
+        Tags = HeavyItem,
+    }
+}

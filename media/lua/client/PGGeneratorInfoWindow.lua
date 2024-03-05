@@ -34,7 +34,9 @@ function ISGeneratorInfoWindow:setObject(object)
 
     self.object = object;
     self.panel:setName(getName(object))
-    self.panel:setTexture(object:getTextureName())
+    -- Theoretically when we set the sprite on the generator it should pass the name through getTextureName()
+    -- Might be a timing issue on our end
+    self.panel:setTexture(object:getSpriteName())
     self.fuel = object:getFuel()
     self.condition = object:getCondition()
 end

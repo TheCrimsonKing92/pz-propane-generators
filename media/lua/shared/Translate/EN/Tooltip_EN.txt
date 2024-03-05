@@ -1,0 +1,5 @@
+Tooltip_EN = {
+    Tooltip_Generator = "Portable power supply. Place near safehouse and connect.<br>Requires high Electrical level and is fueled with gas cans.<br>Do not operate indoors.",
+    Tooltip_GeneratorPropane = "Portable power supply. Place near safehouse and connect.<br>Requires high Electrical level and is fueled with propane.<br>Do not operate indoors.",
+    Tooltip_GeneratorDualFuel = "Portable power supply. Place near safehouse and connect.<br>Requires high Electrical level and can be fueled with gas or propane.<br>Do not operate indoors.",
+}

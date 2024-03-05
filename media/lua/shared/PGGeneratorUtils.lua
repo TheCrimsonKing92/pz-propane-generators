@@ -31,6 +31,13 @@ generatorUtils.GENERATOR_PROBABILITIES = {
 
 local GENERATOR_PROBABILITIES = generatorUtils.GENERATOR_PROBABILITIES
 
+generatorUtils.GENERATOR_SPRITES = {
+    Propane = "generator_propane_0",
+    DualFuel = "generator_dual-fuel_0"
+}
+
+local GENERATOR_SPRITES = generatorUtils.GENERATOR_SPRITES
+
 generatorUtils.DUAL_FUEL_SETTINGS = {
     Gas = GENERATOR_TYPES.Gas,
     Propane = GENERATOR_TYPES.Propane
@@ -79,7 +86,6 @@ generatorUtils.getName = function(generator)
         return getText("IGUI_Generator_TypePropane")
     end
 
-    -- TODO Replace with getText calls to set up for translation
     local setting = generator:getModData().dualFuelSetting
     return getText("IGUI_Generator_TypeDualFuel", setting)
 end
@@ -117,6 +123,25 @@ generatorUtils.isDualFuelSetTo = function(generator, settingType)
     return generatorUtils.isModded(generator) and generatorUtils.isGeneratorType(generator, 'DualFuel') and settingType == generator:getModData().dualFuelSetting
 end
 
+generatorUtils.isGenerator = function(item)
+    if item == nil then
+        return false
+    end
+
+    local fullType = item:getFullType()
+
+    if "Base.Generator" == fullType then
+        return true
+    elseif "PropaneGenerators.PropaneGenerator" == fullType then
+        return true
+    elseif "PropaneGenerators.DualFuelGenerator" == fullType then
+        return true
+    else
+        log("Couldn't identify item with type " .. fullType .. " as a generator")
+        return false
+    end
+end
+
 generatorUtils.isGeneratorType = function(generator, targetType)
     return targetType == generator:getModData().generatorType
 end
@@ -126,7 +151,7 @@ generatorUtils.isModded = function(generator)
 end
 
 generatorUtils.modNewGenerator = function(generator)
-    log('Generating new generator settings...')
+    log('New generator settings --')
     local fuel, condition, generatorType, dualFuelSetting = generatorUtils.getNewGeneratorSettings()
     log('Fuel: ' .. tostring(fuel))
     log('Condition: ' .. tostring(condition))
@@ -134,6 +159,7 @@ generatorUtils.modNewGenerator = function(generator)
     log('Dual-Fuel Setting: ' .. (dualFuelSetting or 'N/A'))
     local gasFuel = 0
     local propaneFuel = 0
+
     if 'DualFuel' == generatorType then
         if DUAL_FUEL_SETTINGS.Gas == dualFuelSetting then
             gasFuel = fuel
@@ -141,9 +167,13 @@ generatorUtils.modNewGenerator = function(generator)
             propaneFuel = fuel
         end
 
+        generator:setSprite(GENERATOR_SPRITES.DualFuel)
         generator:getModData().gasFuel = gasFuel
         generator:getModData().propaneFuel = propaneFuel
+    elseif 'Propane' == generatorType then
+        generator:setSprite(GENERATOR_SPRITES.Propane)
     end
+
     generator:setCondition(condition)
     generator:setFuel(fuel)
     generator:update()
@@ -151,6 +181,11 @@ generatorUtils.modNewGenerator = function(generator)
     generator:getModData().fuel = fuel
     generator:getModData().generatorType = generatorType
     generator:transmitCompleteItemToServer()
+    generator:transmitModData()
+end
+
+generatorUtils.modVanillaGenerator = function(generator)
+    generator:getModData().generatorType = GENERATOR_TYPES.Gas
     generator:transmitModData()
 end
 

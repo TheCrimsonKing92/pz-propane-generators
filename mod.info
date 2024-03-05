@@ -3,3 +3,5 @@ poster=preview.png
 id=PropaneGenerators
 description=Adds propane and dual-fuel generators to Project Zomboid
 url=https://github.com/TheCrimsonKing92/pz-propane-generators
+pack=pzpg-generators
+tiledef=tiledefinitions_pzpg-generators 6566
