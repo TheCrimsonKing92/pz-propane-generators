@@ -16,13 +16,6 @@ function ISUnequipAction:perform()
     if not ("PropaneGenerators.PropaneGenerator" == fullType or
        "PropaneGenerators.DualFuelGenerator" == fullType) then
         originalPerform(self)
-
-        if "Base.Generator" == fullType then
-            if not isModded(self.item) then
-                -- While it's pointless to take over every generator, we don't want to constantly flip types when one is dropped
-                modVanillaGenerator(self.item)
-            end
-        end
         return
     end
 
